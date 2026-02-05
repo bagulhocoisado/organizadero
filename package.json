@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.28",
+  "version": "40.1.35",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -38,7 +38,9 @@
       "target": [
         {
           "target": "dir",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "icon.ico",
@@ -63,8 +65,3 @@
     ]
   }
 }
-
-
-
-
-

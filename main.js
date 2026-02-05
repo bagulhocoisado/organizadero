@@ -6,22 +6,9 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 
-// Importar electron-updater com segurança
-let autoUpdater = null;
-let autoUpdaterAvailable = false;
-
-try {
-  if (app.isPackaged) {
-    autoUpdater = require('electron-updater').autoUpdater;
-    autoUpdaterAvailable = true;
-    console.log('[AutoUpdater] Módulo carregado com sucesso');
-  } else {
-    console.log('[AutoUpdater] Desabilitado em modo desenvolvimento');
-  }
-} catch (err) {
-  console.error('[AutoUpdater] Não foi possível carregar o módulo:', err.message);
-  console.log('[AutoUpdater] O app funcionará normalmente sem auto-update');
-}
+// Sistema de atualização customizado
+const https = require('https');
+const fsSync = require('fs');
 
 // Proteção contra múltiplas instâncias
 const gotTheLock = app.requestSingleInstanceLock();
@@ -55,116 +42,338 @@ console.error = (...args) => {
   originalConsoleError.apply(console, args);
 };
 
-// ========== CONFIGURAÇÃO DO AUTO-UPDATER ==========
-// Sistema totalmente automático e silencioso
-let isDownloadingUpdate = false;
-let updateDownloaded = false;
+// ========== SISTEMA DE ATUALIZAÇÃO CUSTOMIZADO ==========
+// Sistema totalmente automático e silencioso que preserva a pasta saves
+
 let updateCheckInProgress = false;
+const GITHUB_OWNER = 'bagulhocoisado';
+const GITHUB_REPO = 'organizadero';
 
-if (autoUpdaterAvailable && autoUpdater) {
-  // Configurar para GitHub Releases
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'bagulhocoisado',
-    repo: 'organizadero',
-    private: false
+// Função para obter diretório base da aplicação
+function getAppBaseDir() {
+  if (app.isPackaged) {
+    return path.dirname(app.getPath('exe'));
+  } else {
+    return app.getAppPath();
+  }
+}
+
+// Função para comparar versões (formato: X.Y.Z)
+function compareVersions(v1, v2) {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  
+  for (let i = 0; i < 3; i++) {
+    if (parts1[i] > parts2[i]) return 1;
+    if (parts1[i] < parts2[i]) return -1;
+  }
+  return 0;
+}
+
+// Função para obter informações da última release do GitHub
+async function getLatestRelease() {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Organizador-Contas-Updater'
+      }
+    };
+
+    https.get(options, (res) => {
+      let data = '';
+      
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        try {
+          const release = JSON.parse(data);
+          resolve(release);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }).on('error', (err) => {
+      reject(err);
+    });
   });
+}
 
-  // Configurações para update automático e silencioso
-  autoUpdater.autoDownload = true; // Download automático em background
-  autoUpdater.autoInstallOnAppQuit = true; // Instalar automaticamente ao fechar
-  autoUpdater.allowPrerelease = false; // Apenas releases estáveis
-  autoUpdater.allowDowngrade = false; // Sem downgrade
+// Função para baixar arquivo
+async function downloadFile(url, destPath) {
+  return new Promise((resolve, reject) => {
+    const file = fsSync.createWriteStream(destPath);
+    
+    https.get(url, (response) => {
+      // Seguir redirecionamentos
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        https.get(response.headers.location, (redirectResponse) => {
+          redirectResponse.pipe(file);
+          
+          file.on('finish', () => {
+            file.close();
+            resolve();
+          });
+        }).on('error', (err) => {
+          fsSync.unlink(destPath, () => {});
+          reject(err);
+        });
+      } else {
+        response.pipe(file);
+        
+        file.on('finish', () => {
+          file.close();
+          resolve();
+        });
+      }
+    }).on('error', (err) => {
+      fsSync.unlink(destPath, () => {});
+      reject(err);
+    });
+  });
+}
 
-  // Configurar logger
-  try {
-    const log = require('electron-log');
-    autoUpdater.logger = log;
-    autoUpdater.logger.transports.file.level = 'info';
-    console.log('[AutoUpdater] Logger configurado');
-  } catch (err) {
-    console.log('[AutoUpdater] Usando console padrão para logs');
+// Função para verificar e baixar atualização
+async function checkAndDownloadUpdate() {
+  if (!app.isPackaged) {
+    console.log('[Update] Modo desenvolvimento - atualizações desabilitadas');
+    return;
   }
 
-  // Eventos do autoUpdater (todos silenciosos)
-  autoUpdater.on('checking-for-update', () => {
+  try {
     updateCheckInProgress = true;
-    console.log('[AutoUpdater] 🔍 Verificando atualizações...');
-    mainWindow?.webContents.send('update-checking');
-  });
-
-  autoUpdater.on('update-available', (info) => {
+    console.log('[Update] 🔍 Verificando atualizações...');
+    
+    const release = await getLatestRelease();
+    const currentVersion = app.getVersion();
+    const latestVersion = release.tag_name.replace('v', '');
+    
+    console.log(`[Update] 📌 Versão atual: ${currentVersion}`);
+    console.log(`[Update] 📦 Versão disponível: ${latestVersion}`);
+    
+    // Comparar versões
+    if (compareVersions(latestVersion, currentVersion) <= 0) {
+      console.log('[Update] ✓ Aplicativo está atualizado');
+      updateCheckInProgress = false;
+      return;
+    }
+    
+    console.log('[Update] ✅ Nova versão disponível!');
+    
+    // Procurar o asset do win-unpacked.zip
+    const asset = release.assets.find(a => a.name.includes('win-unpacked') && a.name.endsWith('.zip'));
+    
+    if (!asset) {
+      console.log('[Update] ⚠ Arquivo de atualização não encontrado');
+      updateCheckInProgress = false;
+      return;
+    }
+    
+    console.log(`[Update] 💾 Tamanho: ${(asset.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log('[Update] ⏬ Iniciando download...');
+    
+    const baseDir = getAppBaseDir();
+    const tempZipPath = path.join(baseDir, 'update-temp.zip');
+    const pendingUpdateDir = path.join(baseDir, 'pending-update');
+    
+    // Baixar o arquivo
+    await downloadFile(asset.browser_download_url, tempZipPath);
+    console.log('[Update] ✅ Download concluído!');
+    
+    // Extrair para pending-update usando PowerShell
+    console.log('[Update] 📂 Extraindo atualização...');
+    await fs.mkdir(pendingUpdateDir, { recursive: true });
+    
+    // Usar PowerShell para extrair (nativo do Windows, sem dependências)
+    const extractCommand = `powershell -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${pendingUpdateDir}' -Force"`;
+    await execAsync(extractCommand);
+    
+    // Deletar o zip temporário
+    await fs.unlink(tempZipPath);
+    
+    console.log('[Update] ✅ Atualização preparada!');
+    console.log('[Update] 🚀 A atualização será aplicada no próximo início');
+    
     updateCheckInProgress = false;
-    isDownloadingUpdate = true;
-    console.log('[AutoUpdater] ✅ Atualização disponível!');
-    console.log(`[AutoUpdater] 📦 Nova versão: ${info.version}`);
-    console.log(`[AutoUpdater] 💾 Tamanho: ${(info.files[0]?.size / 1024 / 1024).toFixed(2)} MB`);
-    console.log('[AutoUpdater] ⏬ Download iniciando automaticamente...');
     
-    mainWindow?.webContents.send('update-available', {
-      version: info.version,
-      currentVersion: app.getVersion(),
-      releaseDate: info.releaseDate,
-      size: info.files[0]?.size
-    });
-  });
-
-  autoUpdater.on('update-not-available', (info) => {
+  } catch (err) {
+    console.error('[Update] ❌ Erro:', err.message);
     updateCheckInProgress = false;
-    console.log('[AutoUpdater] ✓ Aplicativo está atualizado');
-    console.log(`[AutoUpdater] 📌 Versão atual: ${app.getVersion()}`);
-    
-    mainWindow?.webContents.send('update-not-available', {
-      version: app.getVersion()
-    });
-  });
-
-  autoUpdater.on('error', (err) => {
-    updateCheckInProgress = false;
-    isDownloadingUpdate = false;
-    console.error('[AutoUpdater] ❌ Erro:', err.message);
-    
-    // Enviar erro apenas para debug, não mostrar ao usuário
-    mainWindow?.webContents.send('update-error', {
-      message: err.message
-    });
-  });
-
-  autoUpdater.on('download-progress', (progressObj) => {
-    const percent = Math.round(progressObj.percent);
-    const transferred = (progressObj.transferred / 1024 / 1024).toFixed(2);
-    const total = (progressObj.total / 1024 / 1024).toFixed(2);
-    const speed = (progressObj.bytesPerSecond / 1024 / 1024).toFixed(2);
-    
-    console.log(`[AutoUpdater] ⏬ Baixando: ${percent}% (${transferred}/${total} MB) @ ${speed} MB/s`);
-    
-    mainWindow?.webContents.send('update-download-progress', {
-      percent,
-      transferred: progressObj.transferred,
-      total: progressObj.total,
-      bytesPerSecond: progressObj.bytesPerSecond
-    });
-  });
-
-  autoUpdater.on('update-downloaded', (info) => {
-    isDownloadingUpdate = false;
-    updateDownloaded = true;
-    console.log('[AutoUpdater] ✅ Atualização baixada com sucesso!');
-    console.log(`[AutoUpdater] 🚀 Nova versão ${info.version} será instalada no próximo início`);
-    console.log('[AutoUpdater] 💡 Feche e reabra o aplicativo para atualizar');
-    
-    mainWindow?.webContents.send('update-downloaded', {
-      version: info.version,
-      currentVersion: app.getVersion()
-    });
-  });
-  
-  console.log('[AutoUpdater] ✓ Sistema configurado (modo silencioso)');
-  console.log(`[AutoUpdater] 📌 Versão atual: ${app.getVersion()}`);
-} else {
-  console.log('[AutoUpdater] ⚠ Não disponível (modo desenvolvimento)');
+  }
 }
-// ========== FIM DA CONFIGURAÇÃO DO AUTO-UPDATER ==========
+
+// Função para criar VBScript que executa o batch de forma invisível
+async function createInvisibleLauncher(batchPath) {
+  const vbsPath = batchPath.replace('.bat', '.vbs');
+  
+  const vbsScript = `Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run """${batchPath}""", 0, False
+Set WshShell = Nothing
+`;
+  
+  await fs.writeFile(vbsPath, vbsScript, 'utf8');
+  console.log('[Update] ✅ VBScript launcher criado:', vbsPath);
+  
+  return vbsPath;
+}
+
+// Função para criar launcher script que aplica a atualização após o app fechar
+async function createUpdateLauncher() {
+  const baseDir = getAppBaseDir();
+  const pendingUpdateDir = path.join(baseDir, 'pending-update');
+  const savesDir = path.join(baseDir, 'saves');
+  const exePath = app.getPath('exe');
+  const exeName = path.basename(exePath);
+  const launcherPath = path.join(baseDir, 'apply-update.bat');
+  
+  // Script batch que:
+  // 1. Aguarda o processo terminar (usando PID para evitar problemas com espaços)
+  // 2. Deleta arquivos antigos (exceto saves e pending-update)
+  // 3. Copia arquivos de pending-update para pasta raiz
+  // 4. Deleta pending-update
+  // 5. Reinicia o app
+  // 6. Se auto-deleta
+  const batchScript = `@echo off
+setlocal EnableDelayedExpansion
+
+REM Aguardar um pouco antes de começar
+timeout /t 3 /nobreak >nul 2>&1
+
+REM Esperar processo fechar (usando apenas tasklist simples)
+:wait_loop
+tasklist /FI "IMAGENAME eq ${exeName}" 2>nul | find /I "${exeName}" >nul 2>&1
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >nul 2>&1
+    goto wait_loop
+)
+
+REM Aguardar mais um pouco para garantir que o processo finalizou
+timeout /t 2 /nobreak >nul 2>&1
+
+cd /d "${baseDir}"
+
+REM Detectar estrutura aninhada em pending-update
+set "SOURCE_DIR=${pendingUpdateDir}"
+for /d %%D in ("${pendingUpdateDir}\\*") do (
+    set "SOURCE_DIR=%%D"
+    goto found_nested
+)
+:found_nested
+
+REM Deletar arquivos antigos (exceto saves e pending-update)
+for /d %%D in (*) do (
+    if /I not "%%D"=="saves" if /I not "%%D"=="pending-update" (
+        rd /s /q "%%D" >nul 2>&1
+    )
+)
+
+for %%F in (*) do (
+    if /I not "%%F"=="saves" if /I not "%%F"=="pending-update" if /I not "%%F"=="apply-update.bat" if /I not "%%F"=="apply-update.vbs" (
+        del /f /q "%%F" >nul 2>&1
+    )
+)
+
+REM Copiar arquivos novos
+xcopy /E /I /Y /Q "!SOURCE_DIR!\\*" "${baseDir}" >nul 2>&1
+
+REM Limpar pending-update
+rd /s /q "${pendingUpdateDir}" >nul 2>&1
+
+REM Reiniciar aplicativo
+start "" "${exePath}"
+
+REM Aguardar um momento
+timeout /t 1 /nobreak >nul 2>&1
+
+REM Deletar o VBScript também
+del /f /q "${baseDir}\\apply-update.vbs" >nul 2>&1
+
+REM Auto-deletar este script
+(goto) 2>nul & del "%~f0"
+`;
+  
+  await fs.writeFile(launcherPath, batchScript, 'utf8');
+  console.log('[Update] ✅ Launcher criado:', launcherPath);
+  
+  // Criar VBScript para executar o batch de forma invisível
+  const vbsPath = await createInvisibleLauncher(launcherPath);
+  
+  return vbsPath; // Retorna o VBScript ao invés do batch
+}
+
+// Função para verificar e preparar atualização pendente
+async function applyPendingUpdate() {
+  const baseDir = getAppBaseDir();
+  const pendingUpdateDir = path.join(baseDir, 'pending-update');
+  
+  try {
+    // Verificar se existe atualização pendente
+    await fs.access(pendingUpdateDir);
+    console.log('[Update] 🔄 ATUALIZAÇÃO PENDENTE DETECTADA!');
+  } catch (err) {
+    // Não há atualização pendente
+    return;
+  }
+  
+  console.log('[Update] ========================================');
+  console.log('[Update] PREPARANDO APLICAÇÃO DE ATUALIZAÇÃO');
+  console.log('[Update] ========================================');
+  
+  try {
+    // Criar o launcher script (retorna o VBScript)
+    const vbsPath = await createUpdateLauncher();
+    
+    // Executar o VBScript usando wscript (totalmente invisível)
+    const { spawn } = require('child_process');
+    spawn('wscript.exe', [vbsPath], {
+      detached: true,
+      stdio: 'ignore',
+      cwd: getAppBaseDir()
+    }).unref();
+    
+    console.log('[Update] ✅ Launcher executado de forma invisível!');
+    console.log('[Update] 🚀 Fechando aplicativo para aplicar atualização...');
+    
+    // Aguardar um momento para o launcher iniciar
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Fechar o aplicativo
+    app.quit();
+    
+  } catch (err) {
+    console.error('[Update] ========================================');
+    console.error('[Update] ❌ ERRO AO PREPARAR ATUALIZAÇÃO');
+    console.error('[Update]', err.message);
+    console.error('[Update]', err.stack);
+    console.error('[Update] ========================================');
+  }
+}
+
+// Função auxiliar para copiar diretório recursivamente
+async function copyDirectory(src, dest) {
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    
+    if (entry.isDirectory()) {
+      await copyDirectory(srcPath, destPath);
+    } else {
+      await fs.copyFile(srcPath, destPath);
+    }
+  }
+}
+
+console.log('[Update] ✓ Sistema de atualização customizado carregado');
+console.log(`[Update] 📌 Versão atual: ${app.getVersion()}`);
+
+// ========== FIM DO SISTEMA DE ATUALIZAÇÃO CUSTOMIZADO ==========
 
 
 let mainWindow;
@@ -301,20 +510,28 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  console.log('==========================================');
+  console.log('  ORGANIZADOR DE CONTAS - INICIANDO');
+  console.log('==========================================');
+  
+  // PRIMEIRO: Aplicar atualização pendente se existir
+  await applyPendingUpdate();
+  
+  // Pequeno delay se houve atualização para mostrar logs
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Inicializar diretórios
   savesDir = getSavesDirectory();
   backupsDir = getBackupsDirectory();
   configPath = getConfigPath();
   await ensureDirectories();
   createWindow();
   
-  // Verificar atualizações após 3 segundos (apenas em produção e se disponível)
-  if (app.isPackaged && autoUpdaterAvailable && autoUpdater) {
-    setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(err => {
-        console.error('[AutoUpdater] Erro ao verificar:', err.message);
-      });
-    }, 3000);
-  }
+  // DEPOIS: Verificar se há atualizações disponíveis (em background)
+  console.log('[Update] Verificação automática agendada para 5 segundos...');
+  setTimeout(() => {
+    checkAndDownloadUpdate();
+  }, 5000); // Aguarda 5 segundos após abrir o app
 });
 
 app.on('window-all-closed', () => {
@@ -1616,13 +1833,12 @@ ipcMain.handle('clear-kameleo-cache', async () => {
   }
 });
 
-// ========== HANDLERS DO AUTO-UPDATER ==========
+// ========== HANDLERS DO SISTEMA DE ATUALIZAÇÃO ==========
 
-// Handler para verificar atualizações manualmente (usado pelo painel de debug)
+// Handler para verificar atualizações manualmente
 ipcMain.handle('check-for-updates', async () => {
   try {
     if (!app.isPackaged) {
-      console.log('[AutoUpdater] Modo desenvolvimento - atualizações desabilitadas');
       return { 
         success: false, 
         error: 'Atualizações só funcionam em produção',
@@ -1630,98 +1846,72 @@ ipcMain.handle('check-for-updates', async () => {
       };
     }
     
-    if (!autoUpdaterAvailable || !autoUpdater) {
-      return { 
-        success: false, 
-        error: 'Auto-updater não está disponível' 
-      };
-    }
+    console.log('[Update] Verificação manual solicitada');
     
-    console.log('[AutoUpdater] Verificação manual solicitada');
-    const result = await autoUpdater.checkForUpdates();
+    const release = await getLatestRelease();
+    const currentVersion = app.getVersion();
+    const latestVersion = release.tag_name.replace('v', '');
     
-    if (result && result.updateInfo) {
-      const current = app.getVersion();
-      const latest = result.updateInfo.version;
-      
-      console.log(`[AutoUpdater] Versão atual: ${current}`);
-      console.log(`[AutoUpdater] Versão disponível: ${latest}`);
-      
-      // Comparar versões corretamente
-      const updateAvailable = latest !== current;
-      
-      return { 
-        success: true, 
-        updateInfo: result.updateInfo,
-        currentVersion: current,
-        updateAvailable
-      };
-    }
+    const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
     
     return { 
       success: true, 
-      updateInfo: null,
-      currentVersion: app.getVersion(),
-      updateAvailable: false
+      updateInfo: {
+        version: latestVersion,
+        releaseDate: release.published_at,
+        releaseNotes: release.body
+      },
+      currentVersion: currentVersion,
+      updateAvailable: updateAvailable
     };
   } catch (err) {
-    console.error('[AutoUpdater] Erro ao verificar:', err.message);
+    console.error('[Update] Erro ao verificar:', err.message);
     return { success: false, error: err.message };
   }
 });
 
-// Handler para baixar atualização manualmente (usado pelo painel de debug)
+// Handler para baixar atualização manualmente
 ipcMain.handle('download-update', async () => {
-  if (!autoUpdaterAvailable || !autoUpdater) {
-    return { success: false, error: 'Auto-updater não está disponível' };
-  }
-  
-  if (isDownloadingUpdate) {
-    return { success: true, message: 'Download já em andamento' };
-  }
-  
-  if (updateDownloaded) {
-    return { success: true, message: 'Atualização já foi baixada' };
+  if (!app.isPackaged) {
+    return { success: false, error: 'Atualizações só funcionam em produção' };
   }
   
   try {
-    console.log('[AutoUpdater] Download manual solicitado');
-    await autoUpdater.downloadUpdate();
-    return { success: true, message: 'Download iniciado' };
+    console.log('[Update] Download manual solicitado');
+    await checkAndDownloadUpdate();
+    return { success: true, message: 'Download concluído' };
   } catch (err) {
-    console.error('[AutoUpdater] Erro ao baixar:', err.message);
+    console.error('[Update] Erro ao baixar:', err.message);
     return { success: false, error: err.message };
   }
 });
 
 // Handler para instalar e reiniciar
-ipcMain.handle('quit-and-install', () => {
-  if (!autoUpdaterAvailable || !autoUpdater) {
-    return { success: false, error: 'Auto-updater não está disponível' };
+ipcMain.handle('quit-and-install', async () => {
+  if (!app.isPackaged) {
+    return { success: false, error: 'Atualizações só funcionam em produção' };
   }
   
-  if (!updateDownloaded) {
-    return { success: false, error: 'Nenhuma atualização foi baixada ainda' };
-  }
+  const baseDir = getAppBaseDir();
+  const pendingUpdateDir = path.join(baseDir, 'pending-update');
   
-  console.log('[AutoUpdater] Instalando e reiniciando...');
-  // Instala imediatamente e reinicia o app
-  autoUpdater.quitAndInstall(false, true);
-  return { success: true };
+  try {
+    // Verificar se existe atualização pendente
+    await fs.access(pendingUpdateDir);
+    
+    console.log('[Update] Reiniciando para aplicar atualização...');
+    app.relaunch();
+    app.quit();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Nenhuma atualização pendente' };
+  }
 });
 
 // Handler para retornar a versão do app
 ipcMain.handle('get-app-version', () => {
-  try {
-    const packageJson = require('./package.json');
-    return { 
-      success: true, 
-      version: packageJson.version || app.getVersion() 
-    };
-  } catch (err) {
-    return { 
-      success: true, 
-      version: app.getVersion() 
-    };
-  }
+  return { 
+    success: true, 
+    version: app.getVersion() 
+  };
 });
