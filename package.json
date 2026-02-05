@@ -57,7 +57,6 @@
       "installerIcon": null,
       "uninstallerIcon": null
     },
-    "generateUpdatesFilesForAllChannels": true,
     "mac": {
       "target": "dmg",
       "icon": "icon.icns"
@@ -66,11 +65,14 @@
       "target": "AppImage",
       "icon": "icon.png"
     },
-    "publish": {
-      "provider": "github",
-      "owner": "bagulhocoisado",
-      "repo": "organizadero",
-      "private": false
-    }
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "bagulhocoisado",
+        "repo": "organizadero",
+        "private": false,
+        "releaseType": "release"
+      }
+    ]
   }
 }

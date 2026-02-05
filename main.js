@@ -60,9 +60,18 @@ let isDownloadingUpdate = false;
 let updateDownloaded = false;
 
 if (autoUpdaterAvailable && autoUpdater) {
-  autoUpdater.autoDownload = true; // Baixar automaticamente quando encontrar update
+  // Configurar para usar GitHub Releases diretamente
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'bagulhocoisado',
+    repo: 'organizadero',
+    private: false
+  });
+
+  autoUpdater.autoDownload = false; // Desabilitar download automático para ter mais controle
   autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar o app
-  autoUpdater.allowPrerelease = true; // Aceitar pré-releases do GitHub
+  autoUpdater.allowPrerelease = false; // Usar apenas releases estáveis
+  autoUpdater.allowDowngrade = false; // Não permitir downgrade
 
   // Logs do autoUpdater
   try {
@@ -79,8 +88,16 @@ if (autoUpdaterAvailable && autoUpdater) {
 
   autoUpdater.on('update-available', (info) => {
     console.log('[AutoUpdater] Atualização disponível:', info.version);
-    console.log('[AutoUpdater] Download iniciando automaticamente...');
+    console.log('[AutoUpdater] Versão atual:', app.getVersion());
+    console.log('[AutoUpdater] Iniciando download...');
     isDownloadingUpdate = true;
+    
+    // Iniciar download manualmente
+    autoUpdater.downloadUpdate().catch(err => {
+      console.error('[AutoUpdater] Erro ao baixar:', err);
+      isDownloadingUpdate = false;
+    });
+    
     mainWindow?.webContents.send('update-available', info);
   });
 
@@ -89,7 +106,7 @@ if (autoUpdaterAvailable && autoUpdater) {
   });
 
   autoUpdater.on('error', (err) => {
-    console.error('[AutoUpdater] Erro:', err);
+    console.error('[AutoUpdater] Erro:', err.message);
     isDownloadingUpdate = false;
     // Não notificar o usuário de erros de update para manter silencioso
   });
