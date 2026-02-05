@@ -10838,7 +10838,7 @@ async function closeWindow() {
                 e.preventDefault();
                 const testDate = new Date();
                 const manualDate = getSystemDate();
-                alert('Data calculada: ' + manualDate + '\nData ISO: ' + testDate.toISOString().split('T')[0] + '\nData completa: ' + testDate.toString());
+                alert('Data calculada: ' + manualDate + '\nData da ISO: ' + testDate.toISOString().split('T')[0] + '\nData completa: ' + testDate.toString());
                 forceUpdateEverything();
             }
         });
