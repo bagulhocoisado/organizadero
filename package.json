@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.24",
+  "version": "40.1.25",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -63,4 +63,5 @@
     ]
   }
 }
+
 
