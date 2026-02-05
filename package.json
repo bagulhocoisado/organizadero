@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.20",
+  "version": "40.1.18",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -46,7 +46,8 @@
         }
       ],
       "icon": "icon.ico",
-      "publisherName": "Organizador"
+      "publisherName": "Organizador",
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,
@@ -76,6 +77,3 @@
     ]
   }
 }
-
-
-
