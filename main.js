@@ -56,11 +56,13 @@ console.error = (...args) => {
 };
 
 // ========== CONFIGURAÇÃO DO AUTO-UPDATER ==========
+// Sistema totalmente automático e silencioso
 let isDownloadingUpdate = false;
 let updateDownloaded = false;
+let updateCheckInProgress = false;
 
 if (autoUpdaterAvailable && autoUpdater) {
-  // Configurar para usar GitHub Releases diretamente
+  // Configurar para GitHub Releases
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'bagulhocoisado',
@@ -68,66 +70,99 @@ if (autoUpdaterAvailable && autoUpdater) {
     private: false
   });
 
-  autoUpdater.autoDownload = false; // Desabilitar download automático para ter mais controle
-  autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar o app
-  autoUpdater.allowPrerelease = false; // Usar apenas releases estáveis
-  autoUpdater.allowDowngrade = false; // Não permitir downgrade
+  // Configurações para update automático e silencioso
+  autoUpdater.autoDownload = true; // Download automático em background
+  autoUpdater.autoInstallOnAppQuit = true; // Instalar automaticamente ao fechar
+  autoUpdater.allowPrerelease = false; // Apenas releases estáveis
+  autoUpdater.allowDowngrade = false; // Sem downgrade
 
-  // Logs do autoUpdater
+  // Configurar logger
   try {
-    autoUpdater.logger = require('electron-log');
+    const log = require('electron-log');
+    autoUpdater.logger = log;
     autoUpdater.logger.transports.file.level = 'info';
+    console.log('[AutoUpdater] Logger configurado');
   } catch (err) {
-    console.log('[AutoUpdater] electron-log não disponível, usando console padrão');
+    console.log('[AutoUpdater] Usando console padrão para logs');
   }
 
-  // Eventos do autoUpdater
+  // Eventos do autoUpdater (todos silenciosos)
   autoUpdater.on('checking-for-update', () => {
-    console.log('[AutoUpdater] Verificando atualizações...');
+    updateCheckInProgress = true;
+    console.log('[AutoUpdater] 🔍 Verificando atualizações...');
+    mainWindow?.webContents.send('update-checking');
   });
 
   autoUpdater.on('update-available', (info) => {
-    console.log('[AutoUpdater] Atualização disponível:', info.version);
-    console.log('[AutoUpdater] Versão atual:', app.getVersion());
-    console.log('[AutoUpdater] Iniciando download...');
+    updateCheckInProgress = false;
     isDownloadingUpdate = true;
+    console.log('[AutoUpdater] ✅ Atualização disponível!');
+    console.log(`[AutoUpdater] 📦 Nova versão: ${info.version}`);
+    console.log(`[AutoUpdater] 💾 Tamanho: ${(info.files[0]?.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log('[AutoUpdater] ⏬ Download iniciando automaticamente...');
     
-    // Iniciar download manualmente
-    autoUpdater.downloadUpdate().catch(err => {
-      console.error('[AutoUpdater] Erro ao baixar:', err);
-      isDownloadingUpdate = false;
+    mainWindow?.webContents.send('update-available', {
+      version: info.version,
+      currentVersion: app.getVersion(),
+      releaseDate: info.releaseDate,
+      size: info.files[0]?.size
     });
-    
-    mainWindow?.webContents.send('update-available', info);
   });
 
   autoUpdater.on('update-not-available', (info) => {
-    console.log('[AutoUpdater] Já está na última versão:', info.version);
+    updateCheckInProgress = false;
+    console.log('[AutoUpdater] ✓ Aplicativo está atualizado');
+    console.log(`[AutoUpdater] 📌 Versão atual: ${app.getVersion()}`);
+    
+    mainWindow?.webContents.send('update-not-available', {
+      version: app.getVersion()
+    });
   });
 
   autoUpdater.on('error', (err) => {
-    console.error('[AutoUpdater] Erro:', err.message);
+    updateCheckInProgress = false;
     isDownloadingUpdate = false;
-    // Não notificar o usuário de erros de update para manter silencioso
+    console.error('[AutoUpdater] ❌ Erro:', err.message);
+    
+    // Enviar erro apenas para debug, não mostrar ao usuário
+    mainWindow?.webContents.send('update-error', {
+      message: err.message
+    });
   });
 
   autoUpdater.on('download-progress', (progressObj) => {
     const percent = Math.round(progressObj.percent);
-    console.log(`[AutoUpdater] Progresso: ${percent}% (${progressObj.transferred}/${progressObj.total} bytes)`);
-    mainWindow?.webContents.send('update-download-progress', progressObj);
+    const transferred = (progressObj.transferred / 1024 / 1024).toFixed(2);
+    const total = (progressObj.total / 1024 / 1024).toFixed(2);
+    const speed = (progressObj.bytesPerSecond / 1024 / 1024).toFixed(2);
+    
+    console.log(`[AutoUpdater] ⏬ Baixando: ${percent}% (${transferred}/${total} MB) @ ${speed} MB/s`);
+    
+    mainWindow?.webContents.send('update-download-progress', {
+      percent,
+      transferred: progressObj.transferred,
+      total: progressObj.total,
+      bytesPerSecond: progressObj.bytesPerSecond
+    });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('[AutoUpdater] Atualização baixada:', info.version);
-    console.log('[AutoUpdater] A atualização será instalada no próximo startup do app');
     isDownloadingUpdate = false;
     updateDownloaded = true;
-    mainWindow?.webContents.send('update-downloaded', info);
+    console.log('[AutoUpdater] ✅ Atualização baixada com sucesso!');
+    console.log(`[AutoUpdater] 🚀 Nova versão ${info.version} será instalada no próximo início`);
+    console.log('[AutoUpdater] 💡 Feche e reabra o aplicativo para atualizar');
+    
+    mainWindow?.webContents.send('update-downloaded', {
+      version: info.version,
+      currentVersion: app.getVersion()
+    });
   });
   
-  console.log('[AutoUpdater] Configurado e pronto para uso');
+  console.log('[AutoUpdater] ✓ Sistema configurado (modo silencioso)');
+  console.log(`[AutoUpdater] 📌 Versão atual: ${app.getVersion()}`);
 } else {
-  console.log('[AutoUpdater] Não está disponível nesta sessão');
+  console.log('[AutoUpdater] ⚠ Não disponível (modo desenvolvimento)');
 }
 // ========== FIM DA CONFIGURAÇÃO DO AUTO-UPDATER ==========
 
@@ -1583,44 +1618,110 @@ ipcMain.handle('clear-kameleo-cache', async () => {
 
 // ========== HANDLERS DO AUTO-UPDATER ==========
 
+// Handler para verificar atualizações manualmente (usado pelo painel de debug)
 ipcMain.handle('check-for-updates', async () => {
   try {
     if (!app.isPackaged) {
-      return { success: false, error: 'Atualizações só funcionam em produção' };
+      console.log('[AutoUpdater] Modo desenvolvimento - atualizações desabilitadas');
+      return { 
+        success: false, 
+        error: 'Atualizações só funcionam em produção',
+        devMode: true 
+      };
     }
+    
     if (!autoUpdaterAvailable || !autoUpdater) {
-      return { success: false, error: 'Auto-updater não está disponível' };
+      return { 
+        success: false, 
+        error: 'Auto-updater não está disponível' 
+      };
     }
+    
+    console.log('[AutoUpdater] Verificação manual solicitada');
     const result = await autoUpdater.checkForUpdates();
-    return { success: true, updateInfo: result?.updateInfo };
+    
+    if (result && result.updateInfo) {
+      const current = app.getVersion();
+      const latest = result.updateInfo.version;
+      
+      console.log(`[AutoUpdater] Versão atual: ${current}`);
+      console.log(`[AutoUpdater] Versão disponível: ${latest}`);
+      
+      // Comparar versões corretamente
+      const updateAvailable = latest !== current;
+      
+      return { 
+        success: true, 
+        updateInfo: result.updateInfo,
+        currentVersion: current,
+        updateAvailable
+      };
+    }
+    
+    return { 
+      success: true, 
+      updateInfo: null,
+      currentVersion: app.getVersion(),
+      updateAvailable: false
+    };
   } catch (err) {
+    console.error('[AutoUpdater] Erro ao verificar:', err.message);
     return { success: false, error: err.message };
   }
 });
 
-// Handler mantido para compatibilidade, mas não é mais necessário chamar
-// pois o download é automático quando uma atualização é detectada
+// Handler para baixar atualização manualmente (usado pelo painel de debug)
 ipcMain.handle('download-update', async () => {
   if (!autoUpdaterAvailable || !autoUpdater) {
     return { success: false, error: 'Auto-updater não está disponível' };
   }
-  return { success: true, message: 'Download automático já está ativo' };
+  
+  if (isDownloadingUpdate) {
+    return { success: true, message: 'Download já em andamento' };
+  }
+  
+  if (updateDownloaded) {
+    return { success: true, message: 'Atualização já foi baixada' };
+  }
+  
+  try {
+    console.log('[AutoUpdater] Download manual solicitado');
+    await autoUpdater.downloadUpdate();
+    return { success: true, message: 'Download iniciado' };
+  } catch (err) {
+    console.error('[AutoUpdater] Erro ao baixar:', err.message);
+    return { success: false, error: err.message };
+  }
 });
 
+// Handler para instalar e reiniciar
 ipcMain.handle('quit-and-install', () => {
   if (!autoUpdaterAvailable || !autoUpdater) {
     return { success: false, error: 'Auto-updater não está disponível' };
   }
-  // Instala imediatamente se já foi baixado
+  
+  if (!updateDownloaded) {
+    return { success: false, error: 'Nenhuma atualização foi baixada ainda' };
+  }
+  
+  console.log('[AutoUpdater] Instalando e reiniciando...');
+  // Instala imediatamente e reinicia o app
   autoUpdater.quitAndInstall(false, true);
+  return { success: true };
 });
 
 // Handler para retornar a versão do app
 ipcMain.handle('get-app-version', () => {
   try {
     const packageJson = require('./package.json');
-    return { success: true, version: packageJson.version || app.getVersion() };
+    return { 
+      success: true, 
+      version: packageJson.version || app.getVersion() 
+    };
   } catch (err) {
-    return { success: true, version: app.getVersion() };
+    return { 
+      success: true, 
+      version: app.getVersion() 
+    };
   }
 });
