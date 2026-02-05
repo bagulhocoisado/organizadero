@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.22",
+  "version": "40.1.23",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
     "publish": "electron-builder --win --publish always",
+    "zip-unpacked": "cd dist/win-unpacked && tar -a -c -f ../win-unpacked.zip *",
     "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
@@ -19,8 +20,7 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "electron-updater": "^6.1.7",
-    "electron-log": "^5.0.1"
+    "adm-zip": "^0.5.10"
   },
   "build": {
     "appId": "com.organizador.contas",
@@ -35,28 +35,15 @@
       "icon.png",
       "node_modules/**/*"
     ],
-    "asarUnpack": [
-      "node_modules/electron-updater/**/*"
-    ],
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "dir",
           "arch": ["x64"]
         }
       ],
       "icon": "icon.ico",
-      "publisherName": "Organizador",
-      "verifyUpdateCodeSignature": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "perMachine": false,
-      "installerIcon": null,
-      "uninstallerIcon": null
+      "publisherName": "Organizador"
     },
     "mac": {
       "target": "dmg",
@@ -77,7 +64,3 @@
     ]
   }
 }
-
-
-
-
