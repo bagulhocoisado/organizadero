@@ -24,8 +24,11 @@ console.error = (...args) => {
 };
 
 // ========== CONFIGURAÇÃO DO AUTO-UPDATER ==========
-autoUpdater.autoDownload = false; // Não baixar automaticamente
-autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar
+let isDownloadingUpdate = false;
+let updateDownloaded = false;
+
+autoUpdater.autoDownload = true; // Baixar automaticamente quando encontrar update
+autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar o app
 
 // Logs do autoUpdater
 autoUpdater.logger = require('electron-log');
@@ -38,6 +41,8 @@ autoUpdater.on('checking-for-update', () => {
 
 autoUpdater.on('update-available', (info) => {
   console.log('[AutoUpdater] Atualização disponível:', info.version);
+  console.log('[AutoUpdater] Download iniciando automaticamente...');
+  isDownloadingUpdate = true;
   mainWindow?.webContents.send('update-available', info);
 });
 
@@ -47,15 +52,21 @@ autoUpdater.on('update-not-available', (info) => {
 
 autoUpdater.on('error', (err) => {
   console.error('[AutoUpdater] Erro:', err);
+  isDownloadingUpdate = false;
+  // Não notificar o usuário de erros de update para manter silencioso
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-  console.log(`[AutoUpdater] Progresso: ${Math.round(progressObj.percent)}%`);
+  const percent = Math.round(progressObj.percent);
+  console.log(`[AutoUpdater] Progresso: ${percent}% (${progressObj.transferred}/${progressObj.total} bytes)`);
   mainWindow?.webContents.send('update-download-progress', progressObj);
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   console.log('[AutoUpdater] Atualização baixada:', info.version);
+  console.log('[AutoUpdater] A atualização será instalada no próximo startup do app');
+  isDownloadingUpdate = false;
+  updateDownloaded = true;
   mainWindow?.webContents.send('update-downloaded', info);
 });
 // ========== FIM DA CONFIGURAÇÃO DO AUTO-UPDATER ==========
@@ -214,6 +225,15 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+// Proteção contra perda de dados durante download de update
+app.on('before-quit', async (event) => {
+  if (isDownloadingUpdate && !updateDownloaded) {
+    console.log('[AutoUpdater] Download em andamento, mas permitindo fechamento seguro');
+    // O electron-updater lida com downloads interrompidos automaticamente
+    // na próxima verificação, ele retoma ou reinicia o download
   }
 });
 
@@ -1515,15 +1535,13 @@ ipcMain.handle('check-for-updates', async () => {
   }
 });
 
+// Handler mantido para compatibilidade, mas não é mais necessário chamar
+// pois o download é automático quando uma atualização é detectada
 ipcMain.handle('download-update', async () => {
-  try {
-    await autoUpdater.downloadUpdate();
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
+  return { success: true, message: 'Download automático já está ativo' };
 });
 
 ipcMain.handle('quit-and-install', () => {
+  // Instala imediatamente se já foi baixado
   autoUpdater.quitAndInstall(false, true);
 });

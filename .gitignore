@@ -9,6 +9,7 @@ out/
 # Arquivos de desenvolvimento
 *.log
 !publish.bat
+_publish.bat
 cmd.exe
 .github-token
 
