@@ -1,11 +1,43 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
-const { autoUpdater } = require('electron-updater');
 
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
+
+// Importar electron-updater com segurança
+let autoUpdater = null;
+let autoUpdaterAvailable = false;
+
+try {
+  if (app.isPackaged) {
+    autoUpdater = require('electron-updater').autoUpdater;
+    autoUpdaterAvailable = true;
+    console.log('[AutoUpdater] Módulo carregado com sucesso');
+  } else {
+    console.log('[AutoUpdater] Desabilitado em modo desenvolvimento');
+  }
+} catch (err) {
+  console.error('[AutoUpdater] Não foi possível carregar o módulo:', err.message);
+  console.log('[AutoUpdater] O app funcionará normalmente sem auto-update');
+}
+
+// Proteção contra múltiplas instâncias
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log('[App] Outra instância já está rodando, fechando...');
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Alguém tentou abrir uma segunda instância, focar na janela existente
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 // Suprimir erros SSL no console
 app.commandLine.appendSwitch('ignore-certificate-errors');
@@ -27,48 +59,58 @@ console.error = (...args) => {
 let isDownloadingUpdate = false;
 let updateDownloaded = false;
 
-autoUpdater.autoDownload = true; // Baixar automaticamente quando encontrar update
-autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar o app
+if (autoUpdaterAvailable && autoUpdater) {
+  autoUpdater.autoDownload = true; // Baixar automaticamente quando encontrar update
+  autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar o app
 
-// Logs do autoUpdater
-autoUpdater.logger = require('electron-log');
-autoUpdater.logger.transports.file.level = 'info';
+  // Logs do autoUpdater
+  try {
+    autoUpdater.logger = require('electron-log');
+    autoUpdater.logger.transports.file.level = 'info';
+  } catch (err) {
+    console.log('[AutoUpdater] electron-log não disponível, usando console padrão');
+  }
 
-// Eventos do autoUpdater
-autoUpdater.on('checking-for-update', () => {
-  console.log('[AutoUpdater] Verificando atualizações...');
-});
+  // Eventos do autoUpdater
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[AutoUpdater] Verificando atualizações...');
+  });
 
-autoUpdater.on('update-available', (info) => {
-  console.log('[AutoUpdater] Atualização disponível:', info.version);
-  console.log('[AutoUpdater] Download iniciando automaticamente...');
-  isDownloadingUpdate = true;
-  mainWindow?.webContents.send('update-available', info);
-});
+  autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Atualização disponível:', info.version);
+    console.log('[AutoUpdater] Download iniciando automaticamente...');
+    isDownloadingUpdate = true;
+    mainWindow?.webContents.send('update-available', info);
+  });
 
-autoUpdater.on('update-not-available', (info) => {
-  console.log('[AutoUpdater] Já está na última versão:', info.version);
-});
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[AutoUpdater] Já está na última versão:', info.version);
+  });
 
-autoUpdater.on('error', (err) => {
-  console.error('[AutoUpdater] Erro:', err);
-  isDownloadingUpdate = false;
-  // Não notificar o usuário de erros de update para manter silencioso
-});
+  autoUpdater.on('error', (err) => {
+    console.error('[AutoUpdater] Erro:', err);
+    isDownloadingUpdate = false;
+    // Não notificar o usuário de erros de update para manter silencioso
+  });
 
-autoUpdater.on('download-progress', (progressObj) => {
-  const percent = Math.round(progressObj.percent);
-  console.log(`[AutoUpdater] Progresso: ${percent}% (${progressObj.transferred}/${progressObj.total} bytes)`);
-  mainWindow?.webContents.send('update-download-progress', progressObj);
-});
+  autoUpdater.on('download-progress', (progressObj) => {
+    const percent = Math.round(progressObj.percent);
+    console.log(`[AutoUpdater] Progresso: ${percent}% (${progressObj.transferred}/${progressObj.total} bytes)`);
+    mainWindow?.webContents.send('update-download-progress', progressObj);
+  });
 
-autoUpdater.on('update-downloaded', (info) => {
-  console.log('[AutoUpdater] Atualização baixada:', info.version);
-  console.log('[AutoUpdater] A atualização será instalada no próximo startup do app');
-  isDownloadingUpdate = false;
-  updateDownloaded = true;
-  mainWindow?.webContents.send('update-downloaded', info);
-});
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater] Atualização baixada:', info.version);
+    console.log('[AutoUpdater] A atualização será instalada no próximo startup do app');
+    isDownloadingUpdate = false;
+    updateDownloaded = true;
+    mainWindow?.webContents.send('update-downloaded', info);
+  });
+  
+  console.log('[AutoUpdater] Configurado e pronto para uso');
+} else {
+  console.log('[AutoUpdater] Não está disponível nesta sessão');
+}
 // ========== FIM DA CONFIGURAÇÃO DO AUTO-UPDATER ==========
 
 
@@ -212,11 +254,11 @@ app.whenReady().then(async () => {
   await ensureDirectories();
   createWindow();
   
-  // Verificar atualizações após 3 segundos (apenas em produção)
-  if (app.isPackaged) {
+  // Verificar atualizações após 3 segundos (apenas em produção e se disponível)
+  if (app.isPackaged && autoUpdaterAvailable && autoUpdater) {
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch(err => {
-        console.error('[AutoUpdater] Erro ao verificar:', err);
+        console.error('[AutoUpdater] Erro ao verificar:', err.message);
       });
     }, 3000);
   }
@@ -1528,6 +1570,9 @@ ipcMain.handle('check-for-updates', async () => {
     if (!app.isPackaged) {
       return { success: false, error: 'Atualizações só funcionam em produção' };
     }
+    if (!autoUpdaterAvailable || !autoUpdater) {
+      return { success: false, error: 'Auto-updater não está disponível' };
+    }
     const result = await autoUpdater.checkForUpdates();
     return { success: true, updateInfo: result?.updateInfo };
   } catch (err) {
@@ -1538,10 +1583,16 @@ ipcMain.handle('check-for-updates', async () => {
 // Handler mantido para compatibilidade, mas não é mais necessário chamar
 // pois o download é automático quando uma atualização é detectada
 ipcMain.handle('download-update', async () => {
+  if (!autoUpdaterAvailable || !autoUpdater) {
+    return { success: false, error: 'Auto-updater não está disponível' };
+  }
   return { success: true, message: 'Download automático já está ativo' };
 });
 
 ipcMain.handle('quit-and-install', () => {
+  if (!autoUpdaterAvailable || !autoUpdater) {
+    return { success: false, error: 'Auto-updater não está disponível' };
+  }
   // Instala imediatamente se já foi baixado
   autoUpdater.quitAndInstall(false, true);
 });
