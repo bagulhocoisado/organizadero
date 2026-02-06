@@ -8,6 +8,9 @@ out/
 
 # Arquivos de desenvolvimento
 *.log
+!publish.bat
+cmd.exe
+.github-token
 
 # Saves e configurações do usuário (não sincronizar)
 saves/
@@ -23,5 +26,4 @@ icon.png
 .DS_Store
 Thumbs.db
 
-#token
-!publish.bat
+
