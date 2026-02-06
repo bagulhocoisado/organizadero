@@ -1596,3 +1596,13 @@ ipcMain.handle('quit-and-install', () => {
   // Instala imediatamente se já foi baixado
   autoUpdater.quitAndInstall(false, true);
 });
+
+// Handler para retornar a versão do app
+ipcMain.handle('get-app-version', () => {
+  try {
+    const packageJson = require('./package.json');
+    return { success: true, version: packageJson.version || app.getVersion() };
+  } catch (err) {
+    return { success: true, version: app.getVersion() };
+  }
+});

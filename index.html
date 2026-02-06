@@ -2792,6 +2792,307 @@ input[type="email"]:focus {
             background: #0d8a6a;
         }
         
+        /* Update Debug Panel */
+        .update-debug-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100001;
+            backdrop-filter: blur(2px);
+        }
+
+        .update-debug-overlay.active {
+            display: flex;
+        }
+
+        .update-debug-panel {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            width: 600px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+        }
+
+        .update-debug-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .update-debug-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e4e4e7;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .update-debug-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #262626;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #71717a;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .update-debug-close:hover {
+            background: #2a2a2a;
+            color: #e4e4e7;
+        }
+
+        .update-debug-section {
+            margin-bottom: 20px;
+        }
+
+        .update-debug-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .update-debug-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .update-debug-info-item {
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .update-debug-info-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .update-debug-info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e4e4e7;
+            font-family: 'Courier New', monospace;
+        }
+
+        .update-debug-info-value.loading {
+            color: #71717a;
+            font-style: italic;
+        }
+
+        .update-debug-info-value.error {
+            color: #ef4444;
+        }
+
+        .update-debug-info-value.success {
+            color: #10a37f;
+        }
+
+        .update-debug-status {
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .update-debug-status-text {
+            font-size: 13px;
+            color: #a1a1aa;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .update-debug-progress {
+            background: #262626;
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .update-debug-progress-bar {
+            background: linear-gradient(90deg, #10a37f 0%, #0d8a6a 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .update-debug-progress-text {
+            font-size: 11px;
+            color: #71717a;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .update-debug-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .update-debug-btn {
+            flex: 1;
+            min-width: 180px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #262626;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .update-debug-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .update-debug-btn-primary {
+            background: #10a37f;
+            color: #fff;
+            border-color: #10a37f;
+        }
+
+        .update-debug-btn-primary:hover:not(:disabled) {
+            background: #0d8a6a;
+        }
+
+        .update-debug-btn-secondary {
+            background: #262626;
+            color: #e4e4e7;
+        }
+
+        .update-debug-btn-secondary:hover:not(:disabled) {
+            background: #2a2a2a;
+        }
+
+        .update-debug-btn-danger {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        .update-debug-btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+        }
+
+        .update-debug-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+        }
+
+        .update-debug-toggle-label {
+            font-size: 13px;
+            color: #e4e4e7;
+            font-weight: 500;
+        }
+
+        .update-debug-toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #262626;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .update-debug-toggle-switch.active {
+            background: #10a37f;
+        }
+
+        .update-debug-toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .update-debug-toggle-switch.active .update-debug-toggle-slider {
+            transform: translateX(24px);
+        }
+
+        .update-debug-log {
+            background: #0a0a0b;
+            border: 1px solid #1f1f1f;
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .update-debug-log-entry {
+            color: #71717a;
+            padding: 4px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .update-debug-log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .update-debug-log-entry.info {
+            color: #60a5fa;
+        }
+
+        .update-debug-log-entry.success {
+            color: #10a37f;
+        }
+
+        .update-debug-log-entry.error {
+            color: #ef4444;
+        }
+
+        .update-debug-log-entry.warning {
+            color: #f59e0b;
+        }
+        
         /* Input no modal */
         .custom-modal-input {
             width: 100%;
@@ -10196,16 +10497,287 @@ async function closeWindow() {
         window.addEventListener('focus', forceUpdateEverything);
         document.addEventListener('visibilitychange', forceUpdateEverything);
         
-        // F5 para debug
+        // ==================== UPDATE DEBUG PANEL ====================
+        
+        let autoUpdateEnabled = true;
+        let currentVersion = '1.0.0';
+        let availableVersion = null;
+        let lastCheckTime = null;
+        let updateDownloaded = false;
+        let isChecking = false;
+        
+        function addUpdateLog(message, type = 'info') {
+            const log = document.getElementById('updateDebugLog');
+            const entry = document.createElement('div');
+            entry.className = `update-debug-log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            entry.textContent = `[${timestamp}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            
+            // Manter apenas últimas 50 entradas
+            while (log.children.length > 50) {
+                log.removeChild(log.firstChild);
+            }
+        }
+        
+        function openUpdateDebugPanel() {
+            const overlay = document.getElementById('updateDebugOverlay');
+            overlay.classList.add('active');
+            loadAppVersion();
+            updateDebugDisplay();
+            addUpdateLog('Painel de debug aberto', 'info');
+        }
+        
+        async function loadAppVersion() {
+            try {
+                if (window.electronAPI && window.electronAPI.getAppVersion) {
+                    const result = await window.electronAPI.getAppVersion();
+                    if (result.success && result.version) {
+                        currentVersion = result.version;
+                        addUpdateLog(`Versão atual: v${currentVersion}`, 'info');
+                    }
+                }
+            } catch (err) {
+                addUpdateLog(`Erro ao carregar versão: ${err.message}`, 'error');
+            }
+        }
+        
+        function closeUpdateDebugPanel() {
+            const overlay = document.getElementById('updateDebugOverlay');
+            overlay.classList.remove('active');
+        }
+        
+        function updateDebugDisplay() {
+            // Atualizar versão atual
+            document.getElementById('updateDebugCurrentVersion').textContent = currentVersion;
+            
+            // Atualizar última verificação
+            if (lastCheckTime) {
+                const time = new Date(lastCheckTime).toLocaleTimeString('pt-BR');
+                document.getElementById('updateDebugLastCheck').textContent = time;
+            } else {
+                document.getElementById('updateDebugLastCheck').textContent = 'Nunca';
+            }
+            
+            // Atualizar versão disponível
+            const availableEl = document.getElementById('updateDebugAvailableVersion');
+            if (availableVersion) {
+                availableEl.textContent = availableVersion;
+                availableEl.classList.add('success');
+            } else {
+                availableEl.textContent = 'Nenhuma';
+                availableEl.classList.remove('success', 'error');
+            }
+            
+            // Atualizar status
+            const statusEl = document.getElementById('updateDebugStatus');
+            if (isChecking) {
+                statusEl.textContent = 'Verificando...';
+                statusEl.classList.add('loading');
+                statusEl.classList.remove('success', 'error');
+            } else if (updateDownloaded) {
+                statusEl.textContent = 'Pronto para instalar';
+                statusEl.classList.add('success');
+                statusEl.classList.remove('loading', 'error');
+            } else if (availableVersion) {
+                statusEl.textContent = 'Atualização disponível';
+                statusEl.classList.add('success');
+                statusEl.classList.remove('loading', 'error');
+            } else {
+                statusEl.textContent = 'Atualizado';
+                statusEl.classList.remove('loading', 'success', 'error');
+            }
+            
+            // Atualizar toggle
+            const toggle = document.getElementById('updateDebugAutoToggle');
+            if (autoUpdateEnabled) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+            
+            // Atualizar botões
+            document.getElementById('updateDebugDownloadBtn').disabled = !availableVersion || updateDownloaded;
+            document.getElementById('updateDebugInstallBtn').disabled = !updateDownloaded;
+        }
+        
+        function toggleAutoUpdate() {
+            autoUpdateEnabled = !autoUpdateEnabled;
+            localStorage.setItem('autoUpdateEnabled', autoUpdateEnabled ? 'true' : 'false');
+            updateDebugDisplay();
+            addUpdateLog(`Atualização automática ${autoUpdateEnabled ? 'ativada' : 'desativada'}`, 'info');
+        }
+        
+        async function checkForUpdatesManual() {
+            if (isChecking) {
+                addUpdateLog('Verificação já em andamento', 'warning');
+                return;
+            }
+            
+            isChecking = true;
+            updateDebugDisplay();
+            addUpdateLog('Iniciando verificação de atualizações...', 'info');
+            
+            try {
+                const result = await window.electronAPI.checkForUpdates();
+                lastCheckTime = Date.now();
+                
+                if (result.success) {
+                    if (result.updateInfo) {
+                        availableVersion = result.updateInfo.version;
+                        addUpdateLog(`Atualização encontrada: v${availableVersion}`, 'success');
+                    } else {
+                        availableVersion = null;
+                        addUpdateLog('Nenhuma atualização disponível', 'info');
+                    }
+                } else {
+                    addUpdateLog(`Erro ao verificar: ${result.error}`, 'error');
+                }
+            } catch (err) {
+                addUpdateLog(`Erro: ${err.message}`, 'error');
+            }
+            
+            isChecking = false;
+            updateDebugDisplay();
+        }
+        
+        async function downloadUpdateManual() {
+            if (!availableVersion) {
+                addUpdateLog('Nenhuma atualização disponível para baixar', 'warning');
+                return;
+            }
+            
+            addUpdateLog('Iniciando download...', 'info');
+            
+            try {
+                const result = await window.electronAPI.downloadUpdate();
+                if (result.success) {
+                    addUpdateLog('Download iniciado com sucesso', 'success');
+                } else {
+                    addUpdateLog(`Erro ao iniciar download: ${result.error}`, 'error');
+                }
+            } catch (err) {
+                addUpdateLog(`Erro: ${err.message}`, 'error');
+            }
+        }
+        
+        async function installUpdate() {
+            if (!updateDownloaded) {
+                addUpdateLog('Nenhuma atualização baixada para instalar', 'warning');
+                return;
+            }
+            
+            addUpdateLog('Instalando atualização e reiniciando...', 'success');
+            
+            try {
+                await window.electronAPI.quitAndInstall();
+            } catch (err) {
+                addUpdateLog(`Erro ao instalar: ${err.message}`, 'error');
+            }
+        }
+        
+        // Listener para eventos de atualização do Electron
+        if (window.electronAPI && window.electronAPI.onUpdateAvailable) {
+            window.electronAPI.onUpdateAvailable((info) => {
+                availableVersion = info.version;
+                lastCheckTime = Date.now();
+                addUpdateLog(`Nova versão disponível: v${info.version}`, 'success');
+                updateDebugDisplay();
+                
+                // Se auto-update estiver ativado, o download já começou automaticamente
+                if (autoUpdateEnabled) {
+                    addUpdateLog('Download automático iniciado', 'info');
+                    document.getElementById('updateDebugDownloadSection').style.display = 'block';
+                }
+            });
+        }
+        
+        if (window.electronAPI && window.electronAPI.onUpdateDownloadProgress) {
+            window.electronAPI.onUpdateDownloadProgress((progress) => {
+                const percent = Math.round(progress.percent);
+                document.getElementById('updateDebugProgressBar').style.width = percent + '%';
+                document.getElementById('updateDebugProgressText').textContent = 
+                    `${percent}% - ${formatBytes(progress.transferred)} / ${formatBytes(progress.total)}`;
+                
+                if (percent % 10 === 0) {  // Log a cada 10%
+                    addUpdateLog(`Download: ${percent}%`, 'info');
+                }
+                
+                document.getElementById('updateDebugDownloadSection').style.display = 'block';
+                updateDebugDisplay();
+            });
+        }
+        
+        if (window.electronAPI && window.electronAPI.onUpdateDownloaded) {
+            window.electronAPI.onUpdateDownloaded((info) => {
+                updateDownloaded = true;
+                addUpdateLog(`Atualização v${info.version} baixada com sucesso!`, 'success');
+                addUpdateLog('A atualização será instalada no próximo startup', 'info');
+                document.getElementById('updateDebugDownloadSection').style.display = 'none';
+                updateDebugDisplay();
+            });
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        // Carregar preferência de auto-update
+        const savedAutoUpdate = localStorage.getItem('autoUpdateEnabled');
+        if (savedAutoUpdate !== null) {
+            autoUpdateEnabled = savedAutoUpdate === 'true';
+        }
+        
+        // Inicializar sistema de updates
+        (async function initUpdateSystem() {
+            await loadAppVersion();
+            
+            // Verificar se o auto-updater está disponível
+            if (window.electronAPI && window.electronAPI.checkForUpdates) {
+                addUpdateLog('Sistema de auto-update disponível', 'success');
+                if (autoUpdateEnabled) {
+                    addUpdateLog('Auto-update está ATIVADO', 'info');
+                } else {
+                    addUpdateLog('Auto-update está DESATIVADO', 'warning');
+                }
+            } else {
+                addUpdateLog('Auto-update não está disponível (modo desenvolvimento)', 'warning');
+            }
+        })();
+        
+        // F5 para abrir painel de updates
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F5') {
                 e.preventDefault();
+                openUpdateDebugPanel();
+            }
+            
+            // ESC para fechar o painel se estiver aberto
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('updateDebugOverlay');
+                if (overlay.classList.contains('active')) {
+                    closeUpdateDebugPanel();
+                }
+            }
+        });
+        
+        // F6 para debug de data
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F6') {
+                e.preventDefault();
                 const testDate = new Date();
                 const manualDate = getSystemDate();
-                alert('Data calculada: ' + manualDate + '\nData da ISO: ' + testDate.toISOString().split('T')[0] + '\nData completa: ' + testDate.toString());
+                alert('Data calculada: ' + manualDate + '\nData ISO: ' + testDate.toISOString().split('T')[0] + '\nData completa: ' + testDate.toString());
                 forceUpdateEverything();
             }
         });
+        
+        // ==================== FIM DO UPDATE DEBUG PANEL ====================
 
         initializeApp();
     </script>
@@ -10218,6 +10790,92 @@ async function closeWindow() {
             <div class="custom-modal-title" id="customModalTitle">Confirmar</div>
             <div class="custom-modal-message" id="customModalMessage">Tem certeza?</div>
             <div class="custom-modal-buttons" id="customModalButtons"></div>
+        </div>
+    </div>
+
+    <!-- Update Debug Panel -->
+    <div class="update-debug-overlay" id="updateDebugOverlay" onclick="closeUpdateDebugPanel()">
+        <div class="update-debug-panel" onclick="event.stopPropagation()">
+            <div class="update-debug-header">
+                <div class="update-debug-title">
+                    <span>🔄</span>
+                    <span>Debug de Atualizações</span>
+                </div>
+                <div class="update-debug-close" onclick="closeUpdateDebugPanel()">×</div>
+            </div>
+
+            <!-- Versões -->
+            <div class="update-debug-section">
+                <div class="update-debug-section-title">Informações de Versão</div>
+                <div class="update-debug-info-grid">
+                    <div class="update-debug-info-item">
+                        <div class="update-debug-info-label">Versão Atual</div>
+                        <div class="update-debug-info-value" id="updateDebugCurrentVersion">-</div>
+                    </div>
+                    <div class="update-debug-info-item">
+                        <div class="update-debug-info-label">Última Verificação</div>
+                        <div class="update-debug-info-value" id="updateDebugLastCheck">-</div>
+                    </div>
+                    <div class="update-debug-info-item">
+                        <div class="update-debug-info-label">Versão Disponível</div>
+                        <div class="update-debug-info-value" id="updateDebugAvailableVersion">-</div>
+                    </div>
+                    <div class="update-debug-info-item">
+                        <div class="update-debug-info-label">Status</div>
+                        <div class="update-debug-info-value" id="updateDebugStatus">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status do Download -->
+            <div class="update-debug-section" id="updateDebugDownloadSection" style="display: none;">
+                <div class="update-debug-section-title">Download em Progresso</div>
+                <div class="update-debug-status">
+                    <div class="update-debug-status-text" id="updateDebugDownloadText">Baixando atualização...</div>
+                    <div class="update-debug-progress">
+                        <div class="update-debug-progress-bar" id="updateDebugProgressBar"></div>
+                    </div>
+                    <div class="update-debug-progress-text" id="updateDebugProgressText">0%</div>
+                </div>
+            </div>
+
+            <!-- Configurações -->
+            <div class="update-debug-section">
+                <div class="update-debug-section-title">Configurações</div>
+                <div class="update-debug-toggle">
+                    <div class="update-debug-toggle-label">Atualização Automática</div>
+                    <div class="update-debug-toggle-switch active" id="updateDebugAutoToggle" onclick="toggleAutoUpdate()">
+                        <div class="update-debug-toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="update-debug-section">
+                <div class="update-debug-section-title">Ações</div>
+                <div class="update-debug-buttons">
+                    <button class="update-debug-btn update-debug-btn-primary" onclick="checkForUpdatesManual()">
+                        <span>🔍</span>
+                        <span>Verificar Atualizações</span>
+                    </button>
+                    <button class="update-debug-btn update-debug-btn-secondary" id="updateDebugDownloadBtn" onclick="downloadUpdateManual()" disabled>
+                        <span>⬇️</span>
+                        <span>Baixar Atualização</span>
+                    </button>
+                    <button class="update-debug-btn update-debug-btn-danger" id="updateDebugInstallBtn" onclick="installUpdate()" disabled>
+                        <span>🚀</span>
+                        <span>Instalar e Reiniciar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Log -->
+            <div class="update-debug-section">
+                <div class="update-debug-section-title">Log de Eventos</div>
+                <div class="update-debug-log" id="updateDebugLog">
+                    <div class="update-debug-log-entry info">Sistema de atualização inicializado</div>
+                </div>
+            </div>
         </div>
     </div>
 

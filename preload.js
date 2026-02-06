@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearKameleoCache: () => ipcRenderer.invoke('clear-kameleo-cache'),
   
   // Auto-updater
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
