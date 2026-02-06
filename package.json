@@ -48,8 +48,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "perMachine": false,
-      "installerIcon": "icon.ico",
-      "uninstallerIcon": "icon.ico"
+      "installerIcon": null,
+      "uninstallerIcon": null
     },
     "mac": {
       "target": "dmg",
