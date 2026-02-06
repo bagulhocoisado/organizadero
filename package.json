@@ -45,7 +45,8 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "publisherName": "Organizador"
     },
     "nsis": {
       "oneClick": false,
@@ -56,6 +57,7 @@
       "installerIcon": null,
       "uninstallerIcon": null
     },
+    "generateUpdatesFilesForAllChannels": true,
     "mac": {
       "target": "dmg",
       "icon": "icon.icns"
@@ -68,8 +70,7 @@
       "provider": "github",
       "owner": "bagulhocoisado",
       "repo": "organizadero",
-      "private": false,
-      "releaseType": "release"
+      "private": false
     }
   }
 }
