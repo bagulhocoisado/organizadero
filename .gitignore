@@ -1,0 +1,27 @@
+# Dependências
+node_modules/
+package-lock.json
+
+# Builds
+dist/
+out/
+
+# Arquivos de desenvolvimento
+*.log
+
+# Saves e configurações do usuário (não sincronizar)
+saves/
+latest-update/
+current-update/
+
+# Ícones (adicionar depois manualmente)
+icon.ico
+icon.icns
+icon.png
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+#token
+!publish.bat
