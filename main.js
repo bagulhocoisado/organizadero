@@ -60,8 +60,20 @@ let isDownloadingUpdate = false;
 let updateDownloaded = false;
 
 if (autoUpdaterAvailable && autoUpdater) {
+  // Configurações essenciais
   autoUpdater.autoDownload = true; // Baixar automaticamente quando encontrar update
   autoUpdater.autoInstallOnAppQuit = true; // Instalar ao fechar o app
+  autoUpdater.allowPrerelease = true; // CRÍTICO: Aceitar pré-releases do GitHub
+  autoUpdater.allowDowngrade = false; // Não permitir downgrade
+  
+  // Configurar o feed do GitHub explicitamente
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'bagulhocoisado',
+    repo: 'organizadero',
+    private: false,
+    releaseType: 'release' // Usar 'release' ao invés de 'prerelease'
+  });
 
   // Logs do autoUpdater
   try {

@@ -68,7 +68,8 @@
       "provider": "github",
       "owner": "bagulhocoisado",
       "repo": "organizadero",
-      "private": false
+      "private": false,
+      "releaseType": "release"
     }
   }
 }
