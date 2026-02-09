@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.136",
+  "version": "40.1.137",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -20,8 +20,7 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "axios": "^1.6.0",
-    "fast-speedtest-api": "^0.3.2"
+    "axios": "^1.6.0"
   },
   "build": {
     "appId": "com.organizador.contas",
@@ -68,4 +67,3 @@
     ]
   }
 }
-
