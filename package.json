@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.185",
+  "version": "40.1.186",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -20,7 +20,8 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "electron-updater": "^6.1.7"
   },
   "build": {
     "appId": "com.organizador.contas",
@@ -40,7 +41,7 @@
     "win": {
       "target": [
         {
-          "target": "dir",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
@@ -48,6 +49,14 @@
       ],
       "icon": "icon.ico",
       "publisherName": "Organizador"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "mac": {
       "target": "dmg",
@@ -68,25 +77,3 @@
     ]
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
