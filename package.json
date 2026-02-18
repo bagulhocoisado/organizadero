@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.242",
+  "version": "40.1.239",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -35,7 +35,6 @@
       "elevated-worker.js",
       "preload.js",
       "index.html",
-      "updating.exe",
       "icon.png",
       "node_modules/**/*"
     ],
@@ -74,6 +73,12 @@
         "repo": "organizadero",
         "private": false,
         "releaseType": "release"
+      }
+    ],
+    "extraFiles": [
+      {
+        "from": "updating.exe",
+        "to": "updating.exe"
       }
     ]
   }
