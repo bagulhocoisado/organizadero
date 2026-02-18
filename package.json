@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.200",
+  "version": "40.1.201",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -48,7 +48,8 @@
         }
       ],
       "icon": "icon.ico",
-      "publisherName": "Organizador"
+      "publisherName": "Organizador",
+      "artifactName": "Organizador.de.Contas.Setup.${version}.${ext}"
     },
     "nsis": {
       "oneClick": true,
