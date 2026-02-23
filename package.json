@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.286",
+  "version": "40.1.287",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -79,6 +79,10 @@
       {
         "from": "updating.exe",
         "to": "updating.exe"
+      },
+      {
+        "from": "proxy-manager.exe",
+        "to": "proxy-manager.exe"
       }
     ]
   }
