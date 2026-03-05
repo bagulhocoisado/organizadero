@@ -1,6 +1,6 @@
 {
   "name": "organizador-contas",
-  "version": "40.1.301",
+  "version": "40.1.302",
   "description": "Organizador de Contas - Aplicativo Desktop",
   "main": "main.js",
   "scripts": {
@@ -35,7 +35,8 @@
       "elevated-worker.js",
       "preload.js",
       "index.html",
-      "generator.txt",
+      "generator_us.txt",
+      "generator_jp.txt",
       "icon.png",
       "styles.css",
       "node_modules/**/*"
